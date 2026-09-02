@@ -8,7 +8,7 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
 > [!NOTE]
-> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. Tests below sea level have been inconclusive due to sea water contamination :-)
+> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination :-)
 
 ## What are UVA, UVB and UVC?
 
@@ -29,7 +29,7 @@ Almost all UVC is stopped by the Earth's ozone layer and atmosphere. The only ex
 
 ## What is the UV Index?
 
-The UV Index is rough measurement of the sunlight's strength, tanning power and associated risks. 
+The UV Index is a rough measurement of the sunlight's strength, tanning power and associated risks. 
 
 | UV Index  | Description |
 |:----------|:----------- |
@@ -46,50 +46,48 @@ The UV Index is rough measurement of the sunlight's strength, tanning power and 
 
 <br/>
 
-Below is a summary of the AS7331 Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to this version of the data sheet (DS001047 v4-00 2023-Mar-24). \
+Below is a summary of the AS7331 Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to _this_ version of the data sheet (DS001047 v4-00 2023-Mar-24). \
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
 ## Configuration p49
 
-The gain, internal clock frequency and the conversion time (the number of clocks per sample at the internal clock frequency) can be programmed, to provide a wide range sensitivities and resolutions. It has one 8-bit operating state register (OSR), and three 8-bit configuration registers CREG1..CREG3. Some additional settings are available for special features, see source code.
+The gain, internal clock frequency and conversion time (the number of clocks per sample at the internal clock frequency) can be programmed, to provide a wide range sensitivities and resolutions. It has one 8-bit operating state register (OSR), and three 8-bit configuration registers CREG1..CREG3. Some additional settings are available for special features, see source code.
 
 ## Operating States p15
 
-The AS7331 has two operating states. In the CONFIGURATION state the configuration registers are accessed. In the MEASUREMENT state the measurement registers are accessed. Both sets of registers have the same numbering, so the wrong data will be read if it is in the wrong operating state. After `reset()`, it remains Powered Down in CONFIGURATION mode.
+The AS7331 has two operating states. In the CONFIGURATION state the configuration registers are accessed. In the MEASUREMENT state the measurement registers are accessed. Both sets of registers have the same register numbers, so the wrong data will be read if it's in the wrong operating state. After `reset()`, it remains Powered Down in the CONFIGURATION state.
 
 ## Energy Saving Options p23
 
-It has two power-saving modes, Power Down and Standby.
+It has two power-saving modes, Power Down and Standby. The data sheet contains all the details, with some "nice" state diagrams.
 
 ## Measurements p17
 
-Measurements can be started by an I2C command (CMD), continuous sampling (CONT), or by the falling edge of an external SYN signal (SYNS=start signal, SYND=start and end signals) so readings can be synchronized with an external 
-event.
+Measurements can be started by an I2C command (CMD mode), continuous sampling (CONT mode), or by the falling edge of an external SYN signal (SYNS mode=start signal, SYND mode=start and end signals) so readings can be synchronized with an external event.
 
 ## Polling p17
 
-It is recommended not to send I2C messages while a conversion is in progress. A timer or the chip's READY output can be used to determine when a new reading is available. Both these methods are illustrated in the example application. The READY output can be configured as push-pull or open drain by `setConfigCREG3()`, use open drain if you have more than one AS7331 which shares the same READY pin. 
+It is recommended not to send I2C messages while a conversion is in progress. A timer or the chip's READY output can be used to determine when a new reading is available. Both these methods are illustrated in the example application. The READY output can be configured as push-pull or open-drain (GND or floating) by `setConfigCREG3()`. Use open-drain if you have more than one AS7331 which shares the same READY pin. To detect a missing READY signal, configure the input as `INPUT_PULLDOWN`. 
 
 ## Divider p39
 
-Although the ADC samples are 24-bits, the raw UV values read from the MRESx registers are only 16-bits. This is fine if the resolution is 10..16 bits, but for 11..24 bit resolutions only the LEAST significant 16 bits are returned. This means that an overflow error can occur with certain configurations and data will be lost. Because of this, a divider value 'div' can be configured to shift the 24-bit register so the otherwise unavailable upper 8 bits are returned.
+Although the ADC samples are 24-bits, the raw UV values read from the MRESx registers are only 16-bits. This is fine if the resolution is 10..16 bits, but for 11..24 bit resolutions only the LEAST SIGNIFICANT 16 bits are returned. This means that an overflow error could occur with certain configurations and the readings will be invalid. Because of this, a divider value 'div' can be configured to shift the 24-bit register so the unavailable upper 8 bits will be returned.
 
 ## Irradiance Calculations p30 'Transfer Function'
 
-'Irradiance' is the measurement used for UV light. It is measured as the number of Watts per square metre. For low values, milliWatts-per-square-centimeter `mW/cm2` or microWatts-per-square-centimeter `uW/cm2` are used.
+'Irradiance' is measured as the number of Watts-per-square-metre. For low values, milliWatts-per-square-centimeter `mW/cm2` or microWatts-per-square-centimeter `uW/cm2` is used.
 
-To get an idea of what this means, at the Earth's surface on a clear day at solar noon, the total UVA radiation (wavelengths 315–400nm) is roughly 40 to 60 Watts-per-square-meter (W/m2), which is 4..6 milliWatts-per-square-centimeter (mW/cm2), or 4000..6000 microWatts-per-square centimeter (uW/cm2). In the winter or on a cloudy day, it can be less than 1mW/cm2.
+To get an idea of what this means, at the Earth's surface on a clear day at solar noon, the total UVA radiation (wavelengths 315–400nm) is roughly 40 to 60 Watts-per-square-meter (W/m2), which is 4..6 milliWatts-per-square-centimeter (mW/cm2), or 4000..6000 microWatts-per-square centimeter (uW/cm2). In the winter, or on a cloudy day, it can be less than 1mW/cm2.
 
-Equation 3 in the data sheet (p30) is used for the irradiance calculations, with full scale ranges (FSR) and LS bit significance calculated by `calculateCoefficients()` which is called automatically whenever the configuration is changed. Irradiance values are returned in microWatts-per-square-centimeter, uW/cm2. 
+Equation 3 in the data sheet (p30) is used for the irradiance calculations, with full scale ranges `fsrX` and LS bit significance `lsbX` calculated by `calculateCoefficients()` which is called automatically whenever the configuration is changed. Irradiance values are returned in microWatts-per-square-centimeter (uW/cm2). 
 
 The library also calculates the standard UV Index based on the UVA and UVB values, see `calculateUVIndex()`.
 
-Internally calculated values (`fsrX`, `lsbX`, `tconvI` and `nbitsI`) are public and can be read by the application. Do not write to these unless you are experimenting or testing the algorithms.
+Internally calculated values (`fsrX`, `lsbX`, `tconvI` and `nbitsI`) are public and can be read by the application. Do not write to these, unless you are experimenting or testing the algorithms.
 
-## Advantages Of This Library
+## Advantages of this Library
 
-This library provides calculations for the Full Scale Range (FSR) and LS bit significance for the full range of settings. The `calculateCoefficients()` method also detects invalid configurations. Calculations can be verified by
-comparing them with the tables in the data sheet p32..38 (these are for 1.024MHz internal clock only). The other popular libraries (listed below) do not provide the calculations for all configuration ranges, do not use the 'div' setting, do not detect invalid configurations and seem to ignore overflow values.
+This library provides calculations for the Full Scale Range (FSR) and LS bit significance for the full range of settings. The `calculateCoefficients()` method also detects the many invalid configurations. Calculations can be verified by comparing them with the tables in the data sheet p32..38 (these are for 1.024MHz internal clock only). The other popular libraries (listed below) do not provide the calculations for all configuration ranges, do not use the 'div' setting, do not detect invalid configurations and seem to ignore overflow values.
 
 The library also has better handling of overflow and low value conditions. It will not silently produce invalid results under these conditions.
 
@@ -224,6 +222,6 @@ https://github.com/RobTillaart/AS7331
 
 ## Joke of the Week
 
-Matt's Tip #325: Never test a UV Meter below sea level. \
-_<unless it's IP68 or above - ed>_
+Matt's Tip #325: Never test a MuUV meter below sea level. \
+_<unless it has IP68 certification or above - ed>_
 
