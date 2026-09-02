@@ -8,7 +8,7 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensors are read using 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
 > [!NOTE]
-> This library has been used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog.
+> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog. It uses a Seeed Studio XIAO microcontroller (ESP32).
 
 ## What are UVA, UVB and UVC?
 
@@ -18,7 +18,7 @@ UVA is the most common. UVA can penetrate the skin down to the middle layer (der
 
 UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ (Q. If it only penetrates the epidermis, then why is it so dangerous?)
 
-Amost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans get to UVC is from artificial sources, such as lasers or welding torches etc. UVC can cause skin burns, eye injury and blindness (see Disclaimer). 
+Almost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans (and aliens?) get to UVC is from artificial sources, such as lasers, welding torches, nasty weapons, etc. UVC can cause skin burns, eye injury and blindness (see Disclaimer).
 
 
 ### Typical Maximum UVA Levels
@@ -44,8 +44,9 @@ The UV Index is rough measurement of the sunlight's strength, tanning power and 
 
 (*) The highest UV Index ever recorded (on Earth) was 43.3, measured at the Licancabur volcano in Bolivia in 2003, because of its extreme altitude and tropical latitude. Sunbathing there is NOT recommended (see Disclaimer).
 
+<br/>
 
-Below is a summary of the Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to this version of the data sheet (DS001047 v4-00 2023-Mar-24). \
+Below is a summary of the AS7331 Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to this version of the data sheet (DS001047 v4-00 2023-Mar-24). \
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
 
