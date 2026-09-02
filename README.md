@@ -7,7 +7,8 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensors are read using 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
-This library has been used for the "MuUV" project. This is rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and Windows application. This project will appear ~~soon~~ eventually on the https://muman.ch blog.
+> [!NOTE]
+> This library has been used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog.
 
 ## What are UVA, UVB and UVC?
 
@@ -15,16 +16,16 @@ These are the names given to three frequency ranges of UV light emitted by the s
 
 UVA is the most common. UVA can penetrate the skin down to the middle layer (dermis).
 
-UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA_.
+UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ (Q. If it only penetrates the epidermis, then why is it so dangerous?)
 
 Amost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans get to UVC is from artificial sources, such as lasers or welding torches etc. UVC can cause skin burns, eye injury and blindness (see Disclaimer). 
 
 
 ### Typical Maximum UVA Levels
 
-Natural Sunlight: Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²). \
-Industrial Inspection: Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²). \
-Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm².
+**Natural Sunlight** : Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²). \
+**Industrial Inspection / UV Torch** : Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²). \
+**Industrial UV Curing Lamps** : Specialized high-power meters can read intensive application outputs up to 30 W/cm² (30,000,000 µW/cm²).
 
 ## What is the UV Index?
 
@@ -88,7 +89,7 @@ Internally calculated values (`fsrX`, `lsbX`, `tconvI` and `nbitsI`) are public 
 ## Advantages Of This Library
 
 This library provides calculations for the Full Scale Range (FSR) and LS bit significance for the full range of settings. The `calculateCoefficients()` method also detects invalid configurations. Calculations can be verified by
-comparing them with the tables in the data sheet p32..38 (these are for 1.024MHz only). The other popular libraries (listed below) do not provide the calculations for all configuration ranges, do not use the 'div' setting, and do not detect invalid configurations.
+comparing them with the tables in the data sheet p32..38 (these are for 1.024MHz internal clock only). The other popular libraries (listed below) do not provide the calculations for all configuration ranges, do not use the 'div' setting, do not detect invalid configurations and seem to ignore overflow values.
 
 The library also has better handling of overflow and low value conditions. It will not silently produce invalid results under these conditions.
 
