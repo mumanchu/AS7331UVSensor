@@ -7,21 +7,24 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensors are read using 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
+This library has been used for the "MuUV" project. This is rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and Windows application. This project will appear ~~soon~~ eventually on the https://muman.ch blog.
+
 ## What are UVA, UVB and UVC?
 
 These are the names given to three frequency ranges of UV light emitted by the sun.
 
 UVA is the most common. UVA can penetrate the skin down to the middle layer (dermis).
 
-UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays.
+UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA_.
 
 Amost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans get to UVC is from artificial sources, such as lasers or welding torches etc. UVC can cause skin burns, eye injury and blindness (see Disclaimer). 
+
 
 ### Typical Maximum UVA Levels
 
 Natural Sunlight: Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²). \
 Industrial Inspection: Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²). \
-Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm². \
+Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm².
 
 ## What is the UV Index?
 
@@ -38,7 +41,7 @@ The UV Index is rough measurement of the sunlight's strength, tanning power and 
 | 43.3      | Highest level ever recorded * |
 | 9999      | Overflow, reduce the gain |
 
-(*) The highest ground-level UV Index ever recorded [on Earth] was 43.3, measured at the Licancabur volcano in Bolivia in 2003, beciuase of its extreme altitude and tropical latitude. Sunbathing there is NOT recommended (see Disclaimer).
+(*) The highest UV Index ever recorded (on Earth) was 43.3, measured at the Licancabur volcano in Bolivia in 2003, because of its extreme altitude and tropical latitude. Sunbathing there is NOT recommended (see Disclaimer).
 
 
 Below is a summary of the Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to this version of the data sheet (DS001047 v4-00 2023-Mar-24). \
@@ -47,11 +50,11 @@ https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-S
 
 ## Configuration p49
 
-The gain, conversion time (number of clocks) and internal clock frequency can be programmed to provide a wide range sensitivities, sampling times and resolutions. It has one 8-bit operating state register (OSR), and three 8-bit configuration registers CREG1..CREG3. Plus a few more from special features.
+The gain, internal clock frequency and the conversion time (the number of clocks per sample at the internal clock frequency) can be programmed, to provide a wide range sensitivities and resolutions. It has one 8-bit operating state register (OSR), and three 8-bit configuration registers CREG1..CREG3. Some additional settings are available for special features, see source code.
 
 ## Operating States p15
 
-The AS7331 has two operating states. In the CONFIGURATION state the configuration registers are accessed. In the MEASUREMENT state the measurement registers are accessed. Both sets of registers have the same numbering, so the wrong data will be read if it is in the wrong operating state. After `reset()`, it remains Powered Down in CCONFIGURATION mode.
+The AS7331 has two operating states. In the CONFIGURATION state the configuration registers are accessed. In the MEASUREMENT state the measurement registers are accessed. Both sets of registers have the same numbering, so the wrong data will be read if it is in the wrong operating state. After `reset()`, it remains Powered Down in CONFIGURATION mode.
 
 ## Energy Saving Options p23
 
@@ -94,6 +97,12 @@ The library also has better handling of overflow and low value conditions. It wi
 ## AS7331UVSensor Class Reference
 
 Full details of each method can be read from the associated comments in the source code in `AS7331UVSensor.h`. The descriptions are not duplicated here.
+
+If you add `#define DEBUG` before `#include "AS7331UVSensor.h"`, then additional debug code is generated which outputs error messages to `Serial`. Patch out `#define DEBUG` for the release version.
+
+Most methods return `true` on success, or `false` if there's an invalid parameter or communications error, with a message sent to the `Serial` log. Data is usually returned via parameter pointers. This ensures that the program does not continue running blindly if there's a serious error. Many libraries seem to ignore runtime errors, but some use a global error flag (which may be better...) 
+
+In the unlikely event that you need to access an instance of this class from more than one `.cpp` file, split `AS7331UVSensor.h` into two files, one with the class definition (.h) and one with the code (.cpp).
 
 ```cpp
 class AS7331UVSensor
@@ -183,9 +192,9 @@ public:
 
 ## Example Sketch, as7331-example.ino
 
-The example sketch calls `uvsensor.printCalculations()` to display all the Full Scale Range (FSR) and LS bit significance values for all the valid configuration settings, as calculated by `calculateCoefficients()`. You can verify the first sets of values with the tables in teh data sheet, p32..38. It then sets a typical configuration, and uses a timer - or polls the READY signal - to determine when a reading is available. Each reading sis dasplayed with the samle times (actual and expected), raw UV readings, UV Index, temperature and irradiance values. 
+The example sketch calls `uvsensor.printCalculations()` to display all the Full Scale Range (FSR) and LS bit significance values (etc.) for all the valid configuration settings, as calculated by `calculateCoefficients()`. You can verify the first sets of values with the tables in the data sheet, p32..38. It then sets a typical configuration, and uses a timer - or polls the READY signal - to determine when a reading is available. Each reading is displayed with the sample times (actual and expected), raw UV readings, temperature, UV Index and irradiance values. 
 
-Use the Serial Monitor, PuTTY or similar to display the text output from `Serial.print()`. `printCalculations()` outputs lines of up to 128 characters in length.
+Use the Serial Monitor, PuTTY or similar to display the text output from `Serial.print()`. Note that `printCalculations()` outputs lines of up to 128 characters in length.
 
 ## I2C Addresses
 
@@ -213,7 +222,6 @@ https://github.com/RobTillaart/AS7331
 <br/>
 
 ## Joke of the Week
-
 
 
 
