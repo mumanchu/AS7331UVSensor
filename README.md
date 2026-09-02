@@ -19,9 +19,9 @@ Amost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exp
 
 ### Typical Maximum UVA Levels
 
-Natural Sunlight: Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²).
-Industrial Inspection: Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²).
-Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm².
+Natural Sunlight: Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²). \
+Industrial Inspection: Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²). \
+Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm². \
 
 ## What is the UV Index?
 
