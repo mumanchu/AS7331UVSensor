@@ -5,10 +5,10 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 <img src="images/as7331-uv-sensor.jpg" alt="Picture of Sparkfun AS7331 board" width="300">
 
-The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensors are read using 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
+The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
 > [!NOTE]
-> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog. It uses a Seeed Studio XIAO microcontroller (ESP32).
+> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, USB connection and a Windows Application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. Tests below sea level have been inconclusive due to sea water contamination :-)
 
 ## What are UVA, UVB and UVC?
 
@@ -48,7 +48,6 @@ The UV Index is rough measurement of the sunlight's strength, tanning power and 
 
 Below is a summary of the AS7331 Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to this version of the data sheet (DS001047 v4-00 2023-Mar-24). \
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
-
 
 ## Configuration p49
 
@@ -225,5 +224,6 @@ https://github.com/RobTillaart/AS7331
 
 ## Joke of the Week
 
-
+Matt's Tip #325: Never test a UV Meter below sea level. \
+_<unless it's IP68 or above - ed>_
 
