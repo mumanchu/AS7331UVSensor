@@ -5,21 +5,21 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 <img src="images/as7331-uv-sensor.jpg" alt="Picture of Sparkfun AS7331 board" width="300">
 
-The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
+The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
 > [!NOTE]
-> This library is used for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination :-)
+> This library was developed for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination ;-)
 
 
 ## What are UVA, UVB and UVC?
 
-These are the names given to three frequency ranges of UV light emitted by the sun.
+These are the names given to three wavelength ranges of UV light.
 
 UVA is the most common. UVA can penetrate the skin down to the middle layer (dermis).
 
-UVB is a shorter wavelength than UVA that can only penetrate the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ (Q. If it only penetrates the epidermis, then why is it so dangerous?)
+UVB is a shorter wavelength than UVA and only penetrates the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ It is more dangerous than UVA because it has a shorter wavelength than UVA and therefore has a much higher energy level. Higher energy does much more damage to the DNA in the skin cells, creating mutations that may cause skin cancer and melanoma.
 
-Almost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans (and aliens?) get to UVC is from artificial sources, such as lasers, welding torches, nasty weapons, etc. UVC can cause skin burns, eye injury and blindness (see Disclaimer).
+Almost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans (and aliens?) get to UVC is from artificial sources, such as lasers, welding torches, nasty weapons, supernova explosions, etc. UVC has even more energy than UVB, and causes skin burns, eye injury and blindness (see Disclaimer).
 
 
 ### Typical Maximum UVA Levels
@@ -120,6 +120,8 @@ The library also calculates the standard UV Index based on the UVA and UVB value
 
 Internally calculated values (`fsrX`, `lsbX`, `tconvI` and `nbitsI`) are public and can be read by the application. Do not write to these, unless you are experimenting or testing the algorithms.
 
+Note that the **angle of incidence** of the light has a huge effect. The sensor itself is affected if it is just ±10 degrees away from 90°, p9. 
+
 
 ## AS7331UVSensor Class Reference
 
@@ -135,6 +137,14 @@ In the unlikely event that you need to access an instance of this class from mor
 class AS7331UVSensor
 {
 public:
+	// Values initialised by setConfigCREGx()
+	// do not write to these unless you are experimenting or testing the algoritms
+	uint mmodeI = 1;	// conversion mode, 0=CONT, 1=CMD, 2-SYNS, 3=SYND
+	uint gainI = 10;	// gain setting, 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
+	uint timeI = 6;		// number of clocks at frequency 'cclk', 0=2^10 .. 6=2^16 (65536) .. 14=2^24
+	uint divI = 0;		// divider value, 0=disabled, 1=2, 2=4, 3=8, .. 8=256 (1=2^1 .. 8=2^8)
+	uint cclkI = 0;		// internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
+
 	// Values initialized by calculateCoefficients()
 	// do not write to these unless you are experimenting or testing the algoritms
 	float fsrA, fsrB, fsrC;		// full scale range, microWatts-per-square centimeter, uW/cm2
@@ -241,7 +251,7 @@ https://github.com/RobTillaart/AS7331
 
 | Date  | Revision | Description |
 |:---------- |:---------|:----------- |
-| 2026.09.02 | 0.0.0	| Preliminary |
+| 2026.09.03 | 0.0.0	| Preliminary |
 
 <br/>
 
@@ -249,7 +259,7 @@ https://github.com/RobTillaart/AS7331
 ## Joke of the Week
 
 Matt's Tip #325: Never test a MuUV meter below sea level. \
-_<unless it has IP68 certification or better - ed>_
+_<unless it has IP68 or IP69 certification - ed>_
 
 https://iec.ch/ip-ratings
 
