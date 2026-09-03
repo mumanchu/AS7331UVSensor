@@ -2,105 +2,118 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
+// If you re-use this code, please include this copyright notice:
 // Copyright (C) 2026.08.28, https://muman.ch and https://github/mumanchu
-// All rights reversed, released under the WTF License
+// All rights reversed, released under the terms of the WTF License
+// https://github.com/mumanchu/AS7331UVSensor
 /*
+The 'Sparkfun Min Spectral UV Sensor' board was used (SEN-23518), see
+https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
-***
-TODO handle overflow, 0xffff and overflow status flags
-TODO handle wfact
-***
+The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC 
+ranges. Sensors are read using 24-bit delta-sigma A/D converters, and raw 
+16-bit values are returned for each sensor. It runs on 3.3V and has a 
+standard I2C serial interface.
 
-TODO verify this
-The AS7331 has many gain and conversion settings configurable over I2C which means
-you can measure up to 349 mW / cm² on UVA channel, 386 mW / cm² on UVB and 169 mW / cm² on
-UVC at 1x gain, and with a responsivity as low as 2.38 nW / cm² per LSB.
+CONFIGURATION p49
 
+The gain, internal clock frequency and the conversion time (the number of 
+clocks per sample at the internal clock frequency) can be programmed, to 
+provide a wide range sensitivities and resolutions. It has one 8-bit 
+operating state register (OSR), and three 8-bit configuration registers 
+CREG1..CREG3.
 
-UVA – The most common UV ray from the sun and most dangerous, UVA can penetrate the skin down to the middle layer.
-UVB – A shorter wavelength than UVA that can only penetrate the skin to the top layer. 
-The earth's ozone layer stops some UVB rays from reaching the surface. Treated glass also can stop UVB rays.
-UVC – The ozone layer stops all UVC rays from the sun. The only exposure humans get to UVC is from artificial sources, lasers or welding torches etc.
-the most dangerous type skin burns and eye injury
+OPERATING STATES p15
 
-The highest ground-level UV index ever recorded on Earth was 43.3, measured at the Licancabur volcano in Bolivia in 2003 due to extreme altitude and tropical latitude
+The AS7331 has two operating states. In the CONFIGURATION state the 
+configuration registers are accessed. In the MEASUREMENT state the 
+measurement registers are accessed. Both sets of registers have the same 
+numbering, so the wrong data will be read if it is in the wrong operating
+state. After a reset(), it remains Powered Down in CCONFIGURATION mode.
 
+ENERGY SAVING OPTIONS p23
 
+It has two power-saving modes, Power Down and Standby.
 
-Typical Maximum UVA Levels
-Natural Sunlight: Surface intensity for UVA around 365 nm is typically less than 0.006 W/cm² (6 mW/cm²).
-Industrial Inspection (N大な/Magnaflux): Safe extended limits are commonly 0.005 W/cm² (5,000 µW/cm²), 
-with some maximum limits capped at 0.01 W/cm² (10,000 µW/cm²).
-Industrial UV Curing Lamps: Specialized high-power meters can read intensive application outputs up to 30 W/cm².
+MEASUREMENTS p17
 
+Measurements can be started by an I2C command (CMD), continuous sampling
+(CONT), or by the falling edge of an external SYN signal (SYNS=start signal, 
+SYND=start and end signals) so readings can be synchronized with an external 
+event.
 
-operating states 
-configuration and measurement
+POLLING p17
 
-software reset -> power down and configuration state
+It is recommended not to send I2C messages while a conversion is in progress.
+A timer or the chip's READY output can be used to determine when a new reading 
+is available. Both these methods are illustrated in the example application.
 
+DIVIDER p39
 
-READY polling
-
-
-wfac calibration
-
-
-24-bit OUTCONV vs. 16-bit MRES
-
-
-it is recommended not to communicate via the I²C during the conversion
-Use pause times
-between two conversion cycles for data transfer via the I²C interface
-
-
-Sampling Modes
-CONT	continuous
-CMD		sample on demond
-
-UV readings are synchronised with the falling edge of the SYN pin
-variable or dynamic exposure control
-sync with external event, uv/light source pulse
-eliminate software latency
-
-SYNS	sample on falling edge of SYN pin
-SYND	sample on falling EDGE count of SYN pin
+Although the ADC samples are 24-bits, the raw UV values read from the MRESx 
+registers are only 16-bits. This is fine if the resolution is 10..16 bits, but 
+for 11..24 bit resolutions only the LEAST SIGNIFICANT 16 bits are returned. 
+This means that an overflow error could occur with certain configurations and 
+the readings will be invalid. Because of this, a divider value 'div' can be 
+configured to shift the 24-bit register so the otherwise unavailable upper 
+8 bits are returned.
 
 
-Divider, p39
-The A/D converter is 24 bits, but values are returned as 16-bits.
-The divider allows you to read out the otherwise unavailable upper 8 bits
-en_div = 1, div = 
+IRRADIANCE CALCULATIONS p30 'Transfer Function'
 
+Equation 3 in the data sheet is used for the irradiance calculations, 
+with full scale ranges (FSR) and LS bit significance calculated by 
+calculateCoefficients(), which is called automatically whenever the
+configuration is changed. Irradiance values are returned in microWatts-
+per-square-centimeter, uW/cm2. 
 
-Energy Saving Options
+The library also calculates the stndard UV Index based on the UVA and UVB 
+values.
 
+Internally calculated values (fsrX, lsbX, tconvI and nbitsI) are public 
+and can be read by the application.
 
-Power Down
+ADVANTAGES OF THIS LIBRARY
 
+This library provides some unique features.
 
-Standby
+Calculations for the Full Scale Range (FSR) and LS bit significance for the 
+full range of settings. The calculateCoefficients() method also detects 
+invalid configurations. Calculations can be verified by comparing them with 
+the tables in the data sheet p32..38 (these are for 1.024MHz only).
 
+Handles overflow and low values below the configured sensitivity. It will 
+not silently produce invalid results under these conditions.
 
-Irradiance
-mW/cm2 or uW/cm2 ?
-summer midday = 30 to 50 mW/cm2
+Automatic Gain Control (AGC) feature. If overflow or underflow occurs, the 
+gain can be automatically adjusted to provide the full range of readings.
 
-UV Index
+Implements "Window factors" (wfacX). These are multipliers that compensate 
+for reductions caused by a transparent glass or plastic sensor cover, which 
+is usually fitted to prevent dirt accumulating directly on the UV sensor. 
+The 'wfacX' values are easily calibrated by taking a reading without the cover, 
+then a reading with the cover, and dividing the two. e.g. wfac 1.0=no cover, 
+1.25=with 25% loss. UVA, UVB and UVC may have different wfac values, depending 
+on the cover material.
 
+Documentation. Full details of each method can be read from the associated 
+comments in the source code. There is no need to document them in more than 
+one place, which risks the separate descriptions getting out-of-sync.
+Therefore, documentation generator tags (@class, @code etc.), which make 
+the comments harder to read, are not used. Note that most modern code editors
+will display this comment as a pop-up tooltip while you are editing the code.
 
+I2C ADDRESSES
 
-I2C ADDRESS
-0x011101xx
-0x74..0x77 according to jumbers A1 and A0.
+0x011101xx = 0x74..0x77 according to jumpers A1 and A0 (xx)
 
-DATA SHEET, DS001047 v4-00 • 2023-Mar-24
-All page number references (pxx) are for this document
+DATA SHEET, DS001047 v4-00 2023-Mar-24
+
+All page numbers (pxx) reference *this version* of the document
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
-OTHER LIBRARIES, for reference only
-In all these libraries, the irradiance calculations only seem to work for the 
-1.024MHz internal clock, and the 'divider' is not supported.
+THE OTHER AS7331 LIBRARIES, for reference
+
 https://github.com/sparkfun/SparkFun_AS7331_Arduino_Library
 https://github.com/adafruit/Adafruit_AS7331
 https://github.com/RobTillaart/AS7331
@@ -125,22 +138,29 @@ class AS7331UVSensor
 	byte i2cAdds;
 
 	// Shadow values
-	byte osr = 0x42;	// operation state register OSR shadow
+	byte osr = 0x42;	// operation state register OSR shadow, p49
+	byte creg1 = 0xa6;	// config register 1 CREG1 shadow, p51/52
+	byte creg2 = 0x40;	// config register 2 CREG2 shadow, p53/54
+	byte creg3 = 0x40;	// config register 3 CREG3 shadow, p55
+
+public:
+	// Values initialised by setConfigCREGx()
+	// do not write to these unless you are experimenting or testing the algoritms
 	uint mmodeI = 1;	// conversion mode, 0=CONT, 1=CMD, 2-SYNS, 3=SYND
 	uint gainI = 10;	// gain setting, 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
 	uint timeI = 6;		// number of clocks at frequency 'cclk', 0=2^10 .. 6=2^16 (65536) .. 14=2^24
 	uint divI = 0;		// divider value, 0=disabled, 1=2, 2=4, 3=8, .. 8=256 (1=2^1 .. 8=2^8)
 	uint cclkI = 0;		// internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
 
-public:
-	// Values from calculateCoefficients()
-	// do not write to these, unless you are experimenting or testing
-	float fsrA, fsrB, fsrC;		// full scale range, microWatts per square centimeter, uW/cm2
-	float lsbA, lsbB, lsbC;		// sigificance of LS bit, nanoWatts per square centimeter, nW/cm2
+	// Values initialized by calculateCoefficients()
+	// do not write to these unless you are experimenting or testing the algoritms
+	float fsrA, fsrB, fsrC;		// full scale range, microWatts-per-square centimeter, uW/cm2
+	float lsbA, lsbB, lsbC;		// sigificance of LS bit, nanoWatts-per-square centimeter, nW/cm2
 	uint tconvI;				// conversion time in milliseconds
 	uint nbitsI;				// number of significant bits of conversion (in 24-bit OUTCONV reg)
+	uint agcMaxI, agcMinI;
 
-	// Window factors, set these if the sensor has a glass or plastic cover, each 
+	// Window factors, set these if the sensor has a transparent cover, each 
 	// has a different factor because the window may have different absorbtions
 	// needs calibration, default=1.0 (no window glass)
 	float wfactA = 1.0f;
@@ -148,6 +168,7 @@ public:
 	float wfactC = 1.0f;
 
 	bool begin(TwoWire* twoWire, uint i2cAddress);
+	bool reset();
 
 	//>>> for both CONFIGURATION and MEASUREMENT operating states
 	// status bits for testing 'status' value returned by readStatus(), p59
@@ -160,13 +181,14 @@ public:
 		NOTREADY     = 0x04,	// 1=busy, 0=reading available
 		STANDBYSTATE = 0x02,	// 1=in standby
 		POWERSTATE   = 0x01,	// 1=powered down
-		OVERFLOW     = OUTCONVOF | MRESOF | ADCOF
+		OVERFLOW     = OUTCONVOF | MRESOF
 	} AS7221_STATUS;
 	bool readStatus(AS7221_STATUS* status);
 
-	bool powerDown() { osr |= 0x40;  return writeReg(0x00, osr); }
-	bool powerUp()   { osr &= ~0x40; return writeReg(0x00, osr); }
-	bool startMeasurement() { return writeReg(0x00, 0x80); }
+	bool powerDown() { osr |= 0x40; return writeReg(0x00, osr); }
+	bool powerUp() { osr &= ~0x40; return writeReg(0x00, osr); }
+	bool stanbyOn() { creg3 &= ~0x10; return writeReg(0x08, creg3); }
+	bool standbyOff() { creg3 |= 0x10; return writeReg(0x08, creg3); }
 
 	typedef enum : byte { 
 		INVALID = 0x00, CONFIGURATION = 0x02, MEASUREMENT = 0x03 
@@ -184,17 +206,18 @@ public:
 	//<<<
 
 	//>>> for MEASUREMENT operating state only
-	// 16-bit raw UV sensor readings, 0xffff = max or overflow
+	bool startMeasurement() { return writeReg(0x00, 0x80); }
+	// 16-bit raw UV sensor readings, *uvX = 0xffff = overflow
 	bool readUVA(uint* uva) { return readReg16(0x02, uva); }
 	bool readUVB(uint* uvb) { return readReg16(0x03, uvb); }
 	bool readUVC(uint* uvc) { return readReg16(0x04, uvc); }
 	bool readUV(uint* uva, uint* uvb, uint* uvc);
-	bool readTemperature(uint* degC);
+	bool readTemperature(int* degC);
 	bool readOUTCONV(ulong* outconv);
+	bool automaticGainControl(uint uva, bool overflow = false);
 	//<<<
 
 	// Calculations
-	// irradiance is returned in microWatts-per-square-centimeter, uW/cm2
 	float calculateIrradianceUVA(uint uva);
 	float calculateIrradianceUVB(uint uvb);
 	float calculateIrradianceUVC(uint uvc);
@@ -204,6 +227,7 @@ public:
 	void printCalculations();
 	#endif
 
+protected:
 	// I2C communications
 	bool writeReg(uint reg, byte b);
 	bool readReg(uint reg, byte* b);
@@ -213,23 +237,33 @@ public:
 
 // Does a software reset and initilizes the default settings
 // returns false if something's wrong
-// for most applications, the default settings will be ok
+// the default settings are ok for for most applications
 bool AS7331UVSensor::begin(TwoWire* twoWire, uint i2cAddress)
 {
 	wire = twoWire;
 	i2cAdds = i2cAddress;
 
-	// software reset, write Operational State Register OSR
-	// leaves it powered down and in 'configuration' operating state
+	// software reset
+	// leaves it powered down and in the 'configuration' operating state
+	return reset();
+}
+
+// p49
+// Software reset, write Operational State Register OSR
+// leaves it powered down and in 'configuration' operating state
+// configuration registers are set to their default values
+bool AS7331UVSensor::reset()
+{
 	if (!writeReg(0x00, 0x0a))
 		return false;
 	delay(10);
 
+	// p
 	// check device ID and MUT (API Generation register)
 	// this fails if not in the 'configuration' operating state
 	byte id;
 	if (!readReg(0x02, &id) || id != 0x21) {
-		AS7331_PRINTLN("bad device id or not in 'configuration' state");
+		AS7331_PRINTLN("bad device id or not in CONFIGURATION state");
 		return false;
 	}
 
@@ -238,6 +272,7 @@ bool AS7331UVSensor::begin(TwoWire* twoWire, uint i2cAddress)
 		return false;
 
 	// set default values, same as initialized by software reset
+	// this also saves the shadow values and calculates the coefficients
 	if (!setConfigCREG3(1, 0, 0))	// mmode=CMD, READY=push-pull, cclk=1.024MHz
 		return false;
 	if (!setConfigCREG1(10, 6))		// gain=2 time=64ms (65536 clocks)
@@ -276,17 +311,17 @@ bool AS7331UVSensor::setOperatingState(AS7221_OPERATING_STATE state)
 	AS7331_ASSERT(state == AS7221_OPERATING_STATE::CONFIGURATION ||
 		state == AS7221_OPERATING_STATE::MEASUREMENT, "invalid state");
 
-	osr = (osr & 0x07) | state;
+	osr = (osr & ~0x07) | state;
 	return writeReg(0x00, osr);
 }
 
 AS7331UVSensor::AS7221_OPERATING_STATE AS7331UVSensor::getOperatingState()
 {
 	// use the shadow register
-	uint st = osr & 0x07;
-	if (st != 0x02 && st != 0x03)
-		st = 0;
-	return (AS7221_OPERATING_STATE)st;
+	AS7221_OPERATING_STATE state = (AS7221_OPERATING_STATE)(osr & 0x07);
+	if (state == AS7221_OPERATING_STATE::CONFIGURATION || state == AS7221_OPERATING_STATE::MEASUREMENT)
+		return state;
+	return AS7221_OPERATING_STATE::INVALID;
 }
 
 // Configuration
@@ -337,8 +372,12 @@ bool AS7331UVSensor::setConfigCREG2(bool en_tm, bool en_div, uint div)
 //         1 = CMD mode, measurement on command (default)
 //         2 = SYNS mode, externally synchronized start of measurement
 //         3 = SYND mode, externally synchronized start and end of measurement
-// rdyod : 0 = READY pin is push-pull output, 1 = READY pin is open drain output 
+// rdyod : 0 = READY pin is push-pull output, 1 = READY pin is open-drain output 
+//         if push-pull, use pinMode(READY_PIN, INPUT);
+//         if open-drain, use pinMode(READY_PIN, INPUT_PULLUP); 
+//            or add external 10K..50Kohm pull-up resistor to 3.3V
 // cclk  : internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
+// note: the SB bit is controlled by standbyOn() and standbyOff()
 bool AS7331UVSensor::setConfigCREG3(uint mmode, bool rdyod, uint cclk)
 {
 	AS7331_ASSERT(mmode <= 3 && cclk <= 3, "bad parameter");
@@ -349,7 +388,8 @@ bool AS7331UVSensor::setConfigCREG3(uint mmode, bool rdyod, uint cclk)
 		return false;
 	mmodeI = mmode;
 	cclkI = cclk;
-	byte creg3 = (mmode << 6) + cclk;
+	// CREG3 shadow register
+	creg3 = (mmode << 6) + cclk;
 	if (rdyod)
 		creg3 |= 0x08;
 	return writeReg(0x08, creg3);
@@ -382,20 +422,19 @@ bool AS7331UVSensor::setEDGES(uint edges)
 // Measurements
 
 // p41
-// Reads the temperature of the chip, not the ambient temperature.
-// temperature cannot be -ve, range is 0..138 degC
+// Reads the compensation temperature of the chip (not the ambient temperature)
+// range is -66 .. +137 C (0..4095 raw)
 // there's no need for a float calculation, the sensor is not that accurate
-// the temperature is returned as 0 until the first reading has been taken
-bool AS7331UVSensor::readTemperature(uint* degC)
+bool AS7331UVSensor::readTemperature(int* degC)
 {
 	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
 
 	// temperature reading is 12 bits, max. 0x0fff (4095)
+	// p42, degC = (raw * 0.05) - 66.9
+	// 0 = -66.9C, 1338 = 0C, 4095 = 137.85C
 	uint t;
 	bool ok = readReg16(0x01, &t);
-	// p42, degC = (raw * 0.05) - 66.9
-	// integer version, rounded up
-	*degC = t == 0 ? 0 : ((t * 5) - 6690 + 50) / 100;
+	*degC = (((int)t * 5) - 6690) / 100;
 	return ok;
 }
 
@@ -424,35 +463,74 @@ bool AS7331UVSensor::readOUTCONV(ulong* outconv)
 	return true;
 }
 
+// If the UVA reading is above or below a certain value, or an overflow
+// flag (xxxOF) was set, decrease or increase the gain and take another 
+// reading. The invalid reading should be discarded.
+// Returns true if the gain was changed and a new reading should be taken,
+// false if the gain was not changed.
+// The disadvantage is that readings may be discarded, which can slow it 
+// down a lot if sampling times are long and the UV changes are very big.
+bool AS7331UVSensor::automaticGainControl(uint uva, bool overflow /*= false*/)
+{
+	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
+
+	// gainI : 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
+
+	// overflow, reduce the gain
+	if ((uva >= agcMaxI || overflow) && gainI != 11) {
+		// increasing gainI decreases the gain
+		++gainI;
+		AS7331_PRINTLN("gain decreased");
+	}
+
+	// underflow, increase the gain
+	else if (uva < agcMinI && gainI != 0) {
+		// decreasing gainI increases the gain
+		--gainI;
+		AS7331_PRINTLN("gain increased");
+	}
+	else 
+		return false;
+
+	// update the gain
+	if (!setOperatingState(AS7221_OPERATING_STATE::CONFIGURATION))
+		return false;
+	if (!setConfigCREG1(gainI, timeI))
+		return false;
+	return setOperatingState(AS7221_OPERATING_STATE::MEASUREMENT);
+}
+
 // Calculations
 
-// returned values are in microWatts-per-square-centimeter, uW/cm2
+// irradiance is returned in microWatts-per-square-centimeter, uW/cm2
+// NAN is returned on overflow (16-bit reading = 65535), 
+// but also check the STATUS register xxxOF bits
 float AS7331UVSensor::calculateIrradianceUVA(uint uva)
 {
-	// if reading is too low, we cannot calculate irradiance
+	// if reading is too low, we cannot calculate a sensible irradiance
 	if (uva < 2)
 		return 0.0f;
 	// overflow
-	if (uva >= 65535)
+	if (uva >= 0xffff)
 		return NAN;
 	// multiply by LS bit value and convert nanoWatts to microWatts
-	return (uva * lsbA) / 1000.0f; 
+	return ((float)uva * lsbA) / 1000.0f; 
 }
 float AS7331UVSensor::calculateIrradianceUVB(uint uvb) 
 { 
 	if (uvb < 2)
 		return 0.0f;
-	if (uvb >= 65535)
+	if (uvb >= 0xffff)
 		return NAN;
-	return (uvb * lsbB) / 1000.0f;
+	return ((float)uvb * lsbB) / 1000.0f;
 }
 float AS7331UVSensor::calculateIrradianceUVC(uint uvc) 
 { 
 	if (uvc < 2)
 		return 0.0f;
-	if (uvc >= 65535)
+	if (uvc >= 0xffff)
 		return NAN;
-	return (uvc * lsbC) / 1000.0f;
+	return ((float)uvc * lsbC) / 1000.0f;
 }
 
 // UV Index Calculation
@@ -465,24 +543,26 @@ float AS7331UVSensor::calculateIrradianceUVC(uint uvc)
 // 9999     Overflow, reduce the gain
 uint AS7331UVSensor::calculateUVIndex(uint uva, uint uvb, uint uvc)
 {
-	if (uva == 0xffff || uvb == 0xffff)
+	if (uva >= 0xffff || uvb >= 0xffff)
 		return 9999;		// overflow!
 
-	// WHO states that 95% of UVB is absorbed by the atmosphere, but this 
-	// depends on the altitude. The UVB that does get through is 1000% more 
+	// The WHO states that 95% of UVB is absorbed by the atmosphere, but this 
+	// depends on the altitude. The UVB that does get through is 1000x more 
 	// powerful than UVA!
-	// For UVC, 100% of UVC is absorbed by the atmosphere so it's ignored 
-	// (but the sensor still measures some UVC, e.g. 27uW/cm2 in full evening 
-	// sunlight through double glazing at 1500m altitude)
+	// For UVC, 100% of UVC should be absorbed by the atmosphere, so it's ignored 
+	// (but my sensor measures VERY HIGH levels of UVC, up to 10uW/cm2 in evening 
+	// sunlight through double glazing!?)
 
 	// irradiance in uW/cm2 (microWatts)
 	float irAuW = calculateIrradianceUVA(uva);
 	float irBuW = calculateIrradianceUVB(uvb);
 
-	// add in 1000x the UVB
-	//TODO 1000x UVB seems way too much, maybe use a ratio?
+	// add in the UVB reading
+	//TODO 1000x UVB reading seems way too high! UVI goes way too high
+	//TODO out-of-spec chip?
 	//TODO measure UVA vs. UVB at different altitudes
 	float iruW = irAuW;
+	// for now, just use a ratio...
 	if (irAuW > 0.0f)		// prevent divide-by-zero
 		iruW += ((irBuW / irAuW) * 1000.0f);
 
@@ -495,14 +575,14 @@ uint AS7331UVSensor::calculateUVIndex(uint uva, uint uvb, uint uvc)
 
 // Compute the Full Scale Range (FSR) and LS bit value for each sensor
 // the results for cclk=1.024MHz should match the tables on p32..p38
-// also calculates the conversion time (tconvI) and number of significant bits (nbitsI)
+// calculates the conversion time (tconvI) and number of significant bits (nbitsI)
 // validates the configuration, returning 'false' if it's invalid
 // 
 // uses values initialized by setConfigCREGx()
 // gain : 0=2048, 1=1024, 2=512, .. 11=1
 // time : number of clocks at frequency 'cclk', 0=2^10 .. 14=2^24
 // cclk : internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
-// div  : divider value, 0=disabled, 1=2, 2=4, .. 8=256  (1=2^1..8=2^8)
+// div  : divider value + 1, 0=disabled, 1=2, 2=4, .. 8=256  (1=2^1..8=2^8)
 bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint div)
 {
 	if (gain > 11 || time > 14 || cclk > 3 || div > 8) {
@@ -543,7 +623,6 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 
 	// number of significant bits in conversion, according to tconv
 	// 1ms=10 bits, .. 16384ms=24bits
-	//TODO < 10 bits is allowed?
 	uint nbits = 9;
 	for (uint t = tconv; t; t >>= 1)	// tconv is power-of-2
 		++nbits;
@@ -562,13 +641,13 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 
 	// if 'div' is active, increase the LS bit value and the full scale range
 	// 'div' is not needed for readings <= 16 bits or if the Full Scale Range
-	// is < 65535
+	// is < 0xffff (65535)
 	/*
-	The OUTCONV register is 24 bits. If a conversion of over 16 bits 
-	is used, only the LS 16 bits can be read via the MRESx registers.
-	To read the upper 8 bits, the 'div' divider can be used, see p39
-	section 7.5. This divides the OUTCONV reading, shifting the bits
-	which are transferred to the MRES registers.
+	The OUTCONV register is 24 bits. If a conversion of over 16 bits is used, 
+	only the LS 16 bits can be read via the MRESx registers. To read the upper 
+	8 bits, the 'div' divider can be used, see p39 section 7.5. This divides 
+	the OUTCONV reading, shifting the bits which are transferred to the MRES 
+	registers.
 
 	Without divider, the LS 16 bits are returned
 					  222211111111100000000000
@@ -586,19 +665,19 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 	If the 24-bit OUTCONV register / div contains a value bigger than the 16-bit
 	MRES register, the STATUS register's MRESOF bit is set.
 	*/
+
+	// div  : divider value + 1, 0=disabled, 1=2, 2=4, .. 8=256 (1=2^1..8=2^8)
 	if (div > 0) {
 		if (nbits <= 16) {
 			AS7331_PRINTLN("div not needed for <= 16 bit readings");
 			return false;
 		}
-
-		// div : p54, divider value : 0=disabled, 1=2, 2=4, .. 8=256 (1=2^1..8=2^8)
 		gainMul *= (1 << div);
 	}
 	float multiplier = (float)gainMul / (float)bitDiv;
 
 	// full scale range of MRESx value in microWatts-per-square-centimeter, uW/cm2
-	// for refernce only, we don't need these for the calculations
+	// for reference only, we don't need these for the calculations
 	fsrA = baseFSRA * multiplier;
 	fsrB = baseFSRB * multiplier;
 	fsrC = baseFSRC * multiplier;
@@ -613,6 +692,10 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 	lsbA = baseFSRA * xlsb * wfactA;
 	lsbB = baseFSRB * xlsb * wfactB;
 	lsbC = baseFSRC * xlsb * wfactC;
+
+	// automatic gain control switching values depend on the number of bits
+	agcMaxI = (1 << nbits) - 1;
+	agcMinI = agcMaxI >> 6;		// divide-by-64
 
 	tconvI = tconv;
 	nbitsI = nbits;
@@ -657,11 +740,9 @@ void AS7331UVSensor::printCalculations()
 				// >= 64ms conversion time is required for a 16-bit result
 				ulong tconv = nclk / fclk;
 
-				//TODO conversion time < 1ms is allowed?
-				if (tconv == 0) {
-					//AS7331_PRINTLN("conversion time < 1ms");
+				// skip conversion time < 1ms
+				if (tconv == 0)
 					continue;
-				}
 			
 				//TODO implement 'div', see p39
 				uint div = 0;
@@ -684,7 +765,7 @@ void AS7331UVSensor::printCalculations()
 		AS7331_PRINTLN("");
 	}
 
-	// restore the default values
+	// restore the default coefficients
 	calculateCoefficients(gainI, timeI, cclkI, divI);
 }
 #endif
