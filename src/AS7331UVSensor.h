@@ -2,12 +2,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
+// 
 // If you re-use this code, please include this copyright notice:
-// Copyright (C) 2026.08.28, https://muman.ch and https://github/mumanchu
+// Copyright (C) 2026.09.04, https://muman.ch and https://github/mumanchu
 // All rights reversed, released under the terms of the WTF License
+// For details see
 // https://github.com/mumanchu/AS7331UVSensor
 /*
-The 'Sparkfun Min Spectral UV Sensor' board was used (SEN-23518), see
+For testing, the 'Sparkfun Mini Spectral UV Sensor' (SEN-23518) was used
 https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC 
@@ -77,31 +79,34 @@ ADVANTAGES OF THIS LIBRARY
 
 This library provides some unique features.
 
-Calculations for the Full Scale Range (FSR) and LS bit significance for the 
-full range of settings. The calculateCoefficients() method also detects 
+Calculations of the Full Scale Range (FSR) and LS bit significance for the 
+full range of settings. The `calculateCoefficients()` method also detects 
 invalid configurations. Calculations can be verified by comparing them with 
 the tables in the data sheet p32..38 (these are for 1.024MHz only).
 
 Handles overflow and low values below the configured sensitivity. It will 
 not silently produce invalid results under these conditions.
 
-Automatic Gain Control (AGC) feature. If overflow or underflow occurs, the 
-gain can be automatically adjusted to provide the full range of readings.
+Automatic Gain Control (AGC). If overflow or underflow occurs, the gain can 
+be automatically adjusted to provide the full range of readings.
 
-Implements "Window factors" (wfacX). These are multipliers that compensate 
+Window compensation factors (`wfacX`). These are multipliers that compensate 
 for reductions caused by a transparent glass or plastic sensor cover, which 
 is usually fitted to prevent dirt accumulating directly on the UV sensor. 
-The 'wfacX' values are easily calibrated by taking a reading without the cover, 
-then a reading with the cover, and dividing the two. e.g. wfac 1.0=no cover, 
-1.25=with 25% loss. UVA, UVB and UVC may have different wfac values, depending 
-on the cover material.
+The `wfacX` values are easily calibrated by taking a reading without the 
+cover, then a reading with the cover, and dividing the two. 
+e.g. wfac 1.0=no cover, 1.25=with 25% loss. UVA, UVB and UVC may have 
+different wfac values, depending on the cover material. These could also be 
+used the reduce the values - the UVC readings from my sensor seem tobe way 
+too high (maybe it's an out-of-spec sensor).
 
 Documentation. Full details of each method can be read from the associated 
-comments in the source code. There is no need to document them in more than 
-one place, which risks the separate descriptions getting out-of-sync.
+comments in the source code. There is no need to document them in more 
+than one place, which risks the separate descriptions getting out-of-sync. 
 Therefore, documentation generator tags (@class, @code etc.), which make 
-the comments harder to read, are not used. Note that most modern code editors
-will display this comment as a pop-up tooltip while you are editing the code.
+the comments difficult to read, are not used. Note that most modern code 
+editors will display this comment as a pop-up tooltip while you are editing 
+the code.
 
 I2C ADDRESSES
 
@@ -423,7 +428,7 @@ bool AS7331UVSensor::setEDGES(uint edges)
 
 // p41
 // Reads the compensation temperature of the chip (not the ambient temperature)
-// range is -66 .. +137 C (0..4095 raw)
+// range is -66 .. +137 C (0..4095 raw), that's 0.05degC LS bit resolution
 // there's no need for a float calculation, the sensor is not that accurate
 bool AS7331UVSensor::readTemperature(int* degC)
 {
@@ -434,6 +439,7 @@ bool AS7331UVSensor::readTemperature(int* degC)
 	// 0 = -66.9C, 1338 = 0C, 4095 = 137.85C
 	uint t;
 	bool ok = readReg16(0x01, &t);
+	// an integer is probably all we need
 	*degC = (((int)t * 5) - 6690) / 100;
 	return ok;
 }
@@ -822,4 +828,3 @@ bool AS7331UVSensor::readReg16(uint reg, uint* value)
 	*value = *(uint16_t*)buf;
 	return true;
 }
-
