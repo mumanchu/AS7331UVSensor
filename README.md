@@ -3,7 +3,7 @@
 For testing, the 'Sparkfun Mini Spectral UV Sensor' board was used (SEN-23518).
 https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
-<img src="images/as7331-uv-sensor.jpg" alt="Picture of Sparkfun AS7331 board" width="300">
+<img src="assets/as7331-uv-sensor.jpg" alt="Picture of Sparkfun AS7331 board" width="300">
 
 The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
 
@@ -75,6 +75,7 @@ Full details of each method can be read from the associated comments in the sour
 <br/>
 
 Below is a summary of the AS7331 Data Sheet. Full details are not reproduced here because you can read all about it in the Data Sheet. Page numbers refer to _this_ version of the data sheet (DS001047 v4-00 2023-Mar-24). \
+https://github.com/mumanchu/AS7331UVSensor/blob/main/assets/AS7331_DS001047_4-00.pdf \
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
 
@@ -151,6 +152,7 @@ public:
 	float lsbA, lsbB, lsbC;		// sigificance of LS bit, nanoWatts-per-square centimeter, nW/cm2
 	uint tconvI;				// conversion time in milliseconds
 	uint nbitsI;				// number of significant bits of conversion (in 24-bit OUTCONV reg)
+	uint agcMaxI, agcMinI;
 
 	// Window factors, set these if the sensor has a transparent cover, each 
 	// has a different factor because the window may have different absorbtions
@@ -204,7 +206,7 @@ public:
 	bool readUVB(uint* uvb) { return readReg16(0x03, uvb); }
 	bool readUVC(uint* uvc) { return readReg16(0x04, uvc); }
 	bool readUV(uint* uva, uint* uvb, uint* uvc);
-	bool readTemperature(uint* degC);
+	bool readTemperature(int* degC);
 	bool readOUTCONV(ulong* outconv);
 	bool automaticGainControl(uint uva, bool overflow = false);
 	//<<<
@@ -236,6 +238,7 @@ Use the Serial Monitor, PuTTY or similar to display the text output from `Serial
 ## Data Sheet DS001047 v4-00 2023-Mar-24
 
 All page numbers (pxx) reference *this version* of the document \
+https://github.com/mumanchu/AS7331UVSensor/blob/main/assets/AS7331_DS001047_4-00.pdf \
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
 
