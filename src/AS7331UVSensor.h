@@ -150,7 +150,7 @@ class AS7331UVSensor
 
 public:
 	// Values initialised by setConfigCREGx()
-	// do not write to these unless you are experimenting or testing the algoritms
+	// do not write to these unless you are experimenting or testing the algorithms
 	uint mmodeI = 1;	// conversion mode, 0=CONT, 1=CMD, 2-SYNS, 3=SYND
 	uint gainI = 10;	// gain setting, 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
 	uint timeI = 6;		// number of clocks at frequency 'cclk', 0=2^10 .. 6=2^16 (65536) .. 14=2^24
@@ -158,7 +158,7 @@ public:
 	uint cclkI = 0;		// internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
 
 	// Values initialized by calculateCoefficients()
-	// do not write to these unless you are experimenting or testing the algoritms
+	// do not write to these unless you are experimenting or testing the algorithms
 	float fsrA, fsrB, fsrC;		// full scale range, microWatts-per-square centimeter, uW/cm2
 	float lsbA, lsbB, lsbC;		// sigificance of LS bit, nanoWatts-per-square centimeter, nW/cm2
 	uint tconvI;				// conversion time in milliseconds
