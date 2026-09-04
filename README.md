@@ -65,8 +65,8 @@ It will not silently produce invalid results under these conditions.
 **Automatic Gain Control (AGC)** \
 If overflow or underflow occurs, the gain can be automatically adjusted to provide the full range of readings.
 
-**Window factors (`wfacX`)** \
-These are multipliers that compensate for reductions caused by a transparent glass or plastic sensor cover, which is usually fitted to prevent dirt accumulating directly on the UV sensor. The `wfacX` values are easily calibrated by taking a reading without the cover, then a reading with the cover, and dividing the two. e.g. wfac 1.0=no cover, 1.25=with 25% loss. UVA, UVB and UVC may have different wfac values, depending on the cover material.
+**Window compensation factors (`wfacX`)** \
+These are multipliers that compensate for reductions caused by a transparent glass or plastic sensor cover, which is usually fitted to prevent dirt accumulating directly on the UV sensor. The `wfacX` values are easily calibrated by taking a reading without the cover, then a reading with the cover, and dividing the two. e.g. wfac 1.0=no cover, 1.25=with 25% loss. UVA, UVB and UVC may have different wfac values, depending on the cover material. These could also be used the reduce the values - the UVC readings from my sensor seem to be way too high (maybe it's an out-of-spec sensor).
 
 **Documentation** \
 Full details of each method can be read from the associated comments in the source code. There is no need to document them in more than one place, which risks the separate descriptions getting out-of-sync. Therefore, documentation generator tags (@class, @code etc.), which make the comments difficult to read, are not used. Note that most modern code editors will display this comment as a pop-up tooltip while you are editing the code.
@@ -241,7 +241,7 @@ https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-S
 
 ## Other Popular AS7331 Libraries
 
-For reference. I found only three official Arduino AS7331 libraries. \
+For reference, there are already three official Arduino AS7331 libraries. Now there are four :-)\
 https://github.com/sparkfun/SparkFun_AS7331_Arduino_Library \
 https://github.com/adafruit/Adafruit_AS7331 \
 https://github.com/RobTillaart/AS7331
@@ -251,7 +251,7 @@ https://github.com/RobTillaart/AS7331
 
 | Date  | Revision | Description |
 |:---------- |:---------|:----------- |
-| 2026.09.03 | 0.0.0	| Preliminary |
+| 2026.09.04 | 0.0.0	| Preliminary |
 
 <br/>
 
