@@ -2,6 +2,13 @@
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
 // Copyright (C) 2026.08.28, https://muman.ch and https://github.com/mumanchu
 // All rights reversed, released under the terms of the WTF license
+/*
+This is an example using the AS7331UVSensror library in CMD mode, where a 
+single conversion is controlled by an I2C message sent by startMeasurement().
+
+For full details see
+https://github.com/mumanchu/AS7331UVSensor
+*/
 
 // Comment this out for release mode
 #define DEBUG
@@ -128,15 +135,15 @@ void loop()
 					// calculate irradiance values in uW/cm2
 					uint uvIndex = uvsensor.calculateUVIndex(uva, uvb, uvc);
 					float irA = uvsensor.calculateIrradianceUVA(uva);
-					float irB = uvsensor.calculateIrradianceUVA(uvb);
-					float irC = uvsensor.calculateIrradianceUVA(uvc);
+					float irB = uvsensor.calculateIrradianceUVB(uvb);
+					float irC = uvsensor.calculateIrradianceUVC(uvc);
 
 					// read on-chip temperature sensor
 					int temp;
 					uvsensor.readTemperature(&temp);
 
 					// display the values
-					sprintf(buf, "t=%umS tconvI=%umS gain=x%u nbits=%u  uva=%u uvb=%u uvc=%u temp=%iC uvIndex=%u",
+					sprintf(buf, "t=%umS tconvI=%umS gain=x%u nbits=%u  uva=%u uvb=%u uvc=%u temp=%dC uvIndex=%u",
 						tconvActual, uvsensor.tconvI, 2048 >> uvsensor.gainI, uvsensor.nbitsI, 
 						uva, uvb, uvc, temp, uvIndex);
 					char* s = strchr(buf, '\0');
