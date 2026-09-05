@@ -9,6 +9,10 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface to access the internal registers.
 
+> [!IMPORTANT]
+> One small caveat, the example code uses `sprintf(buf, " %f ", float_value);`. This will not work unless your C Runtime Libary supports floats. If it doesn't, modify the code to use `floatToString()` which you can find here: \
+> https://github.com/mumanchu/mumanchu/tree/main/utils 
+
 > [!NOTE]
 > This library was developed for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination ;-)
 
