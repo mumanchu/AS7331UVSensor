@@ -134,7 +134,7 @@ If you add `#define DEBUG` before `#include "AS7331UVSensor.h"`, then additional
 
 Most methods return `true` on success, or `false` if there's an invalid parameter or communications error, with a message sent to the `Serial` log. Data is usually returned via parameter pointers. This ensures that the program does not continue running blindly if there's a serious error. Many libraries seem to ignore runtime errors, but some use a global error flag (which may be better...) 
 
-The configuration methods write to the configuration registers `setConfigCREGx()` instead of using many separate methods. Configuartion is usually only done once, so there's no need to make it complicated.
+The configuration methods write to the configuration registers `setConfigCREGx()` instead of using many separate methods. Configuration is usually only done once, so there's no need to make it complicated.
 
 In the unlikely event that you need to access an instance of this class from more than one `.cpp` file, split `AS7331UVSensor.h` into two files, one with the class definition (.h) and one with the code (.cpp).
 
