@@ -41,7 +41,10 @@ void setup()
 	Serial.println("\n\rStarted\n\r");
 	Serial.flush();
 
+	// XIAO has no LED
+	#ifdef LED_BUILTIN
 	pinMode(LED_BUILTIN, OUTPUT);
+	#endif
 	#if defined(AS7331_READY_PIN) 
 	pinMode(AS7331_READY_PIN, INPUT_PULLDOWN);
 	#endif
@@ -79,7 +82,9 @@ void loop()
 	static ulong t1 = 0;
 	if (t - t1 > 100000) {		// 100ms
 		t1 = t;
+		#ifdef LED_BUILTIN
 		digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+		#endif
 	}
 
 	static bool measurementStarted = false;
