@@ -5,7 +5,7 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
 <img src="assets/as7331-uv-sensor.jpg" alt="Picture of Sparkfun AS7331 board" width="300">
 
-The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface.
+The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface to access the internal registers.
 
 > [!NOTE]
 > This library was developed for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination ;-)
@@ -17,9 +17,9 @@ These are the names given to three wavelength ranges of UV light.
 
 UVA is the most common. UVA can penetrate the skin down to the middle layer (dermis).
 
-UVB is a shorter wavelength than UVA and only penetrates the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ It is more dangerous than UVA because it has a shorter wavelength than UVA and therefore has a much higher energy level. Higher energy does much more damage to the DNA in the skin cells, creating mutations that may cause skin cancer and melanoma.
+UVB is a shorter wavelength than UVA and only penetrates the skin's top layer (epidermis). The atmosphere stops about 95% of UVB rays from reaching the surface, depending on the altitude. Treated glass or plastic also stops UVB rays. Stanford Medecine states: _UVB is 3 to 4 orders of magnitude (1,000 to 10,000 times) more potent than UVA!_ It is more dangerous than UVA because it has a shorter wavelength and therefore has a much higher energy level. Higher energy does much more damage to the DNA in the skin cells, causing mutations that may lead to skin cancer and melanoma.
 
-Almost all UVC is stopped by the Earth's ozone layer and atmosphere. The only exposure humans (and aliens?) get to UVC is from artificial sources, such as lasers, welding torches, nasty weapons, supernova explosions, etc. UVC has even more energy than UVB, and causes skin burns, eye injury and blindness (see Disclaimer).
+UVC is almost all stopped by the Earth's ozone layer and atmosphere. The only exposure Earth's lifeforms get to UVC is from artificial sources, such as lasers, welding torches, sterilization lamps, space age weapons, etc. UVC has even more energy than UVB, and in addition to mutations and cancers, it causes severe skin burns, eye injury and blindness (see Disclaimer).
 
 
 ### Typical Maximum UVA Levels
@@ -132,6 +132,8 @@ If you add `#define DEBUG` before `#include "AS7331UVSensor.h"`, then additional
 
 Most methods return `true` on success, or `false` if there's an invalid parameter or communications error, with a message sent to the `Serial` log. Data is usually returned via parameter pointers. This ensures that the program does not continue running blindly if there's a serious error. Many libraries seem to ignore runtime errors, but some use a global error flag (which may be better...) 
 
+The configuration methods write to the configuration registers `setConfigCREGx()` instead of using many separate methods. Configuartion is usually only done once, so there's no need to make it complicated.
+
 In the unlikely event that you need to access an instance of this class from more than one `.cpp` file, split `AS7331UVSensor.h` into two files, one with the class definition (.h) and one with the code (.cpp).
 
 ```cpp
@@ -139,7 +141,7 @@ class AS7331UVSensor
 {
 public:
 	// Values initialised by setConfigCREGx()
-	// do not write to these unless you are experimenting or testing the algoritms
+	// do not write to these unless you are experimenting or testing the algorithms
 	uint mmodeI = 1;	// conversion mode, 0=CONT, 1=CMD, 2-SYNS, 3=SYND
 	uint gainI = 10;	// gain setting, 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
 	uint timeI = 6;		// number of clocks at frequency 'cclk', 0=2^10 .. 6=2^16 (65536) .. 14=2^24
@@ -147,7 +149,7 @@ public:
 	uint cclkI = 0;		// internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
 
 	// Values initialized by calculateCoefficients()
-	// do not write to these unless you are experimenting or testing the algoritms
+	// do not write to these unless you are experimenting or testing the algorithms
 	float fsrA, fsrB, fsrC;		// full scale range, microWatts-per-square centimeter, uW/cm2
 	float lsbA, lsbB, lsbC;		// sigificance of LS bit, nanoWatts-per-square centimeter, nW/cm2
 	uint tconvI;				// conversion time in milliseconds
@@ -164,34 +166,36 @@ public:
 	bool begin(TwoWire* twoWire, uint i2cAddress);
 	bool reset();
 
-	//>>> for both CONFIGURATION and MEASUREMENT operating states
+	//>>> for both Configuration and Measurement operating states
 	// status bits for testing 'status' value returned by readStatus(), p59
-	typedef enum : byte {
-		OUTCONVOF    = 0x80,	// overflow of internal bit time counter, OUTCONV
-		MRESOF       = 0x40,	// overflow of one or more MRESx 16-bit registers
-		ADCOF        = 0x20,	// overflow of one or more ADC channels
-		LDATA        = 0x10,	// output buffer overwritten with new value before previous value was read
-		NDATA        = 0x08,	// new readings transferred to MRESx registers
-		NOTREADY     = 0x04,	// 1=busy, 0=reading available
-		STANDBYSTATE = 0x02,	// 1=in standby
-		POWERSTATE   = 0x01,	// 1=powered down
-		OVERFLOW     = OUTCONVOF | MRESOF
-	} AS7221_STATUS;
-	bool readStatus(AS7221_STATUS* status);
+	typedef enum {
+		OutConvOF = 0x80,		// overflow of internal bit time counter, OUTCONV
+		MresOF = 0x40,			// overflow of one or more MRESx 16-bit registers
+		AdcOF = 0x20,			// overflow of one or more ADC channels
+		LData = 0x10,			// output buffer overwritten with new value before previous value was read
+		NData = 0x08,			// new readings transferred to MRESx registers
+		NotReady = 0x04,		// 1=busy, 0=reading available
+		StandbyState = 0x02,	// 1=in standby
+		PowerState = 0x01		// 1=powered down
+	} AS7331Status;
 
+	bool readStatus(AS7331Status* status);
 	bool powerDown() { osr |= 0x40; return writeReg(0x00, osr); }
 	bool powerUp() { osr &= ~0x40; return writeReg(0x00, osr); }
 	bool stanbyOn() { creg3 &= ~0x10; return writeReg(0x08, creg3); }
 	bool standbyOff() { creg3 |= 0x10; return writeReg(0x08, creg3); }
 
-	typedef enum : byte { 
-		INVALID = 0x00, CONFIGURATION = 0x02, MEASUREMENT = 0x03 
-	} AS7221_OPERATING_STATE;
-	bool setOperatingState(AS7221_OPERATING_STATE state);
-	AS7221_OPERATING_STATE getOperatingState();
+	typedef enum { 
+		Invalid = 0x00, 
+		Configuration = 0x02, 
+		Measurement = 0x03 
+	} AS7331OperatingState;
+
+	bool setOperatingState(AS7331OperatingState state);
+	AS7331OperatingState getOperatingState();
 	//<<<
 
-	//>>> for CONFIGURATION operating state only
+	//>>> for Configuration operating state only
 	bool setConfigCREG1(uint gain, uint time);
 	bool setConfigCREG2(bool en_tm, bool en_div, uint div);
 	bool setConfigCREG3(uint mmode, bool rdyod, uint cclk);
@@ -199,7 +203,7 @@ public:
 	bool setEDGES(uint edges);
 	//<<<
 
-	//>>> for MEASUREMENT operating state only
+	//>>> for Measurement operating state only
 	bool startMeasurement() { return writeReg(0x00, 0x80); }
 	// 16-bit raw UV sensor readings, *uvX = 0xffff = overflow
 	bool readUVA(uint* uva) { return readReg16(0x02, uva); }
@@ -230,6 +234,25 @@ The example sketch calls `uvsensor.printCalculations()` to display all the Full 
 Use the Serial Monitor, PuTTY or similar to display the text output from `Serial.print()`. Note that `printCalculations()` outputs lines of up to 128 characters in length.
 
 
+## Intermittent bug in Arduino's Wire.cpp :-o
+
+I was held up for a while with an intermittent failure in `TwoWire::requestFrom()`. It uses a potentially uninitialized variable called `busOwner`. In `Wire.cpp` line 83, the code `&& (busOwner = sercom->isBusOwnerWIRE()` is not executed if `byteRead < quantity` is true, so `busOwner` is stuck at some random value. There is an outstanding issue for this, https://github.com/arduino/ArduinoCore-samd/issues/740.
+
+The AS7331UVSensor library has a work-around (a hack), it just ignores the return value of `requestFrom()`.
+
+Here's the offending code in `Wire.cpp`, line 83:
+
+```cpp
+	bool busOwner;
+
+    // Connected to slave
+    for (byteRead = 1; byteRead < quantity && (busOwner = sercom->isBusOwnerWIRE()); ++byteRead) {
+		...
+	}
+
+```
+
+
 ## I2C Addresses
 
 0x011101xx = 0x74..0x77 according to jumpers A1 and A0 (xx)
@@ -254,7 +277,7 @@ https://github.com/RobTillaart/AS7331
 
 | Date  | Revision | Description |
 |:---------- |:---------|:----------- |
-| 2026.09.04 | 0.0.0	| Preliminary |
+| 2026.09.05 | 1.0.0	| Initial release |
 
 <br/>
 
