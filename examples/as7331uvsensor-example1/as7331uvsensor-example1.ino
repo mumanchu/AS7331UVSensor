@@ -1,16 +1,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
-// Copyright (C) 2026.09.04, https://muman.ch and https://github.com/mumanchu
+// Copyright (C) 2026.09.05, https://muman.ch and https://github.com/mumanchu
 // All rights reversed, released under the terms of the WTF license
 /*
-This is an example using the AS7331UVSensror library in CMD mode, where a 
+This is an example using the AS7331UVSensor library in CMD mode, where a 
 single conversion is controlled by an I2C message sent by startMeasurement().
 
 For full details see
 https://github.com/mumanchu/AS7331UVSensor
 */
 
-// Comment this out for release mode
+// Comment this out for release mode, to remove the log output
 #define DEBUG
 
 #include <Wire.h>
@@ -18,13 +18,14 @@ https://github.com/mumanchu/AS7331UVSensor
 #include "AS7331UVSensor.h"
 AS7331UVSensor uvsensor;
 
-// comment this out if not using the READY output for polling
-#define READY_PIN D7
+// Comment this out if not using the READY output for polling
+// see also line 97
+#define AS7331_READY_PIN	7	// D7 (PA8 on Nucleo board)
 
 
 void setup()
 {
-	// i use different pins for RX/TX logging
+	// use different pins for RX/TX logging
 	// this is only for the STM32 Nucleo-64 boards
 	#ifdef ARDUINO_NUCLEO_64
 	Serial.setTx(PC_10);
@@ -41,15 +42,13 @@ void setup()
 	Serial.flush();
 
 	pinMode(LED_BUILTIN, OUTPUT);
-	#if defined(READY_PIN) 
-	pinMode(READY_PIN, INPUT_PULLDOWN);
+	#if defined(AS7331_READY_PIN) 
+	pinMode(AS7331_READY_PIN, INPUT_PULLDOWN);
 	#endif
 
 	// 400kHz
 	Wire.begin();
-	Wire.setClock(400000);
-	// sometimes the timeout is infinite?
-	Wire.setTimeout(100);
+	Wire.setClock(100000);
 
 	// reset and set default configuration
 	if (!uvsensor.begin(&Wire, 0x74)) {
@@ -60,7 +59,7 @@ void setup()
 
 	// show the calculations
 	// the first 1.024MHz set should match the tables on p32..p38
-	//uvsensor.printCalculations();
+	uvsensor.printCalculations();
 
 	// configure the gain and integration time
 	// if using automatic gain control, start with the highest gain (0=x2048)
@@ -68,7 +67,7 @@ void setup()
 
 	// power up and start reading UV
 	uvsensor.powerUp();
-	uvsensor.setOperatingState(uvsensor.MEASUREMENT);
+	uvsensor.setOperatingState(uvsensor.Measurement);
 }
 
 void loop()
@@ -95,26 +94,26 @@ void loop()
 		// do not start polling until after the reading has been taken
 		
 		// use a timer or use the READY signal, comment out as required
-		//if (digitalRead(READY_PIN)) {		// use READY signal
-		if (t - tpoll > tconv) {			// use timer
+		//if (digitalRead(AS7331_READY_PIN)) {	// use READY signal
+		if (t - tpoll > tconv) {	// use timer
 
-			AS7331UVSensor::AS7221_STATUS status;
+			AS7331UVSensor::AS7331Status status;
 			uvsensor.readStatus(&status);
 
 			// reading is ready
-			if ((status & uvsensor.NOTREADY) == 0) {
+			if ((status & uvsensor.NotReady) == 0) {
 				ulong tconvActual = (micros() - tstart) / 1000;
 				measurementStarted = false;
 
 				// did measurement overflow occur?
-				bool overflow = (status & uvsensor.OVERFLOW) != 0;
+				bool overflow = (status & (uvsensor.OutConvOF | uvsensor.MresOF)) != 0;
 				if (overflow) {
 					strcpy(buf, "overflow=");
-					if (status & uvsensor.OUTCONVOF)
+					if (status & uvsensor.OutConvOF)
 						strcat(buf, "OUTCONVOF ");
-					if (status & uvsensor.MRESOF)
+					if (status & uvsensor.MresOF)
 						strcat(buf, "MRESOF ");
-					if (status & uvsensor.ADCOF)
+					if (status & uvsensor.AdcOF)
 						strcat(buf, "ADCOF ");
 					Serial.println(buf);
 					Serial.flush();
@@ -138,7 +137,7 @@ void loop()
 					float irB = uvsensor.calculateIrradianceUVB(uvb);
 					float irC = uvsensor.calculateIrradianceUVC(uvc);
 
-					// read on-chip temperature sensor
+					// read on-chip temperature sensor, degC
 					int temp;
 					uvsensor.readTemperature(&temp);
 
