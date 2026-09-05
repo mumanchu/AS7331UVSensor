@@ -10,7 +10,7 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC ranges of ultraviolet light. Sensor readings are converted via 24-bit delta-sigma A/D converters, and raw 16-bit values are returned for each sensor. It runs on 3.3V and has a standard I2C serial interface to access the internal registers.
 
 > [!IMPORTANT]
-> One small caveat, the example code uses `sprintf(buf, " %f ", float_value);`. This will not work unless your C Runtime Libary supports floats. If it doesn't, modify the code to use `floatToString()` which you can find here: \
+> One small caveat, the example code uses `sprintf(buf, " %f ", float_value);`. This will not work unless your C Runtime Library supports floats. If it doesn't, modify the code to use `floatToString()` which you can find here: \
 > https://github.com/mumanchu/mumanchu/tree/main/utils 
 
 > [!NOTE]
