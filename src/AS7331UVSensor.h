@@ -114,7 +114,7 @@ I2C ADDRESSES
 
 DATA SHEET, DS001047 v4-00 2023-Mar-24
 
-All page numbers (pxx) reference *this version* of the document
+All page numbers (pxx) reference *this version* of the document (v4-00, 2023-Mar-24)
 https://look.ams-osram.com/m/1856fd2c69c35605/original/AS7331-Spectral-UVA-B-C-Sensor.pdf
 
 THE OTHER AS7331 LIBRARIES, for reference
@@ -801,7 +801,7 @@ bool AS7331UVSensor::readReg(uint reg, byte* b)
 	// returns the wrong number of bytes (byteRead--)
 	// https://github.com/arduino/ArduinoCore-samd/issues/740
 	// see https://github.com/mumanchu/AS7331UVSensor for the fix
-	if (wire->requestFrom(i2cAdds, 1) != 1) {
+	if (wire->requestFrom(i2cAdds, (byte)1) != 1) {
 		AS7331_PRINTLN("requestFrom() failed (probably caused by the bug in Wire.cpp)");
 		//return false;
 	}
@@ -826,7 +826,7 @@ bool AS7331UVSensor::readReg16(uint reg, uint* value)
 		AS7331_PRINTLN("endTransmission() failed");
 		return false;
 	}
-	if (wire->requestFrom(i2cAdds, 2) != 2) {
+	if (wire->requestFrom(i2cAdds, (byte)2) != 2) {
 		AS7331_PRINTLN("requestFrom() failed (probably caused by the bug in Wire.cpp)");
 		//return false;
 	}
