@@ -4,7 +4,7 @@
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
 // 
 // If you re-use this code, please include this copyright notice:
-// Copyright (C) 2026.09.04, https://muman.ch and https://github/mumanchu
+// Copyright (C) 2026.09.05, https://muman.ch and https://github/mumanchu
 // All rights reversed, released under the terms of the WTF License
 // For details see
 // https://github.com/mumanchu/AS7331UVSensor
@@ -15,7 +15,7 @@ https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 The AS7331 contains three separate photodiode sensors, for UVA, UVB and UVC 
 ranges. Sensors are read using 24-bit delta-sigma A/D converters, and raw 
 16-bit values are returned for each sensor. It runs on 3.3V and has a 
-standard I2C serial interface.
+standard I2C serial interface to access the internal registers.
 
 CONFIGURATION p49
 
@@ -175,34 +175,36 @@ public:
 	bool begin(TwoWire* twoWire, uint i2cAddress);
 	bool reset();
 
-	//>>> for both CONFIGURATION and MEASUREMENT operating states
+	//>>> for both Configuration and Measurement operating states
 	// status bits for testing 'status' value returned by readStatus(), p59
-	typedef enum : byte {
-		OUTCONVOF    = 0x80,	// overflow of internal bit time counter, OUTCONV
-		MRESOF       = 0x40,	// overflow of one or more MRESx 16-bit registers
-		ADCOF        = 0x20,	// overflow of one or more ADC channels
-		LDATA        = 0x10,	// output buffer overwritten with new value before previous value was read
-		NDATA        = 0x08,	// new readings transferred to MRESx registers
-		NOTREADY     = 0x04,	// 1=busy, 0=reading available
-		STANDBYSTATE = 0x02,	// 1=in standby
-		POWERSTATE   = 0x01,	// 1=powered down
-		OVERFLOW     = OUTCONVOF | MRESOF
-	} AS7221_STATUS;
-	bool readStatus(AS7221_STATUS* status);
+	typedef enum {
+		OutConvOF = 0x80,		// overflow of internal bit time counter, OUTCONV
+		MresOF = 0x40,			// overflow of one or more MRESx 16-bit registers
+		AdcOF = 0x20,			// overflow of one or more ADC channels
+		LData = 0x10,			// output buffer overwritten with new value before previous value was read
+		NData = 0x08,			// new readings transferred to MRESx registers
+		NotReady = 0x04,		// 1=busy, 0=reading available
+		StandbyState = 0x02,	// 1=in standby
+		PowerState = 0x01		// 1=powered down
+	} AS7331Status;
 
+	bool readStatus(AS7331Status* status);
 	bool powerDown() { osr |= 0x40; return writeReg(0x00, osr); }
 	bool powerUp() { osr &= ~0x40; return writeReg(0x00, osr); }
 	bool stanbyOn() { creg3 &= ~0x10; return writeReg(0x08, creg3); }
 	bool standbyOff() { creg3 |= 0x10; return writeReg(0x08, creg3); }
 
-	typedef enum : byte { 
-		INVALID = 0x00, CONFIGURATION = 0x02, MEASUREMENT = 0x03 
-	} AS7221_OPERATING_STATE;
-	bool setOperatingState(AS7221_OPERATING_STATE state);
-	AS7221_OPERATING_STATE getOperatingState();
+	typedef enum { 
+		Invalid = 0x00, 
+		Configuration = 0x02, 
+		Measurement = 0x03 
+	} AS7331OperatingState;
+
+	bool setOperatingState(AS7331OperatingState state);
+	AS7331OperatingState getOperatingState();
 	//<<<
 
-	//>>> for CONFIGURATION operating state only
+	//>>> for Configuration operating state only
 	bool setConfigCREG1(uint gain, uint time);
 	bool setConfigCREG2(bool en_tm, bool en_div, uint div);
 	bool setConfigCREG3(uint mmode, bool rdyod, uint cclk);
@@ -210,7 +212,7 @@ public:
 	bool setEDGES(uint edges);
 	//<<<
 
-	//>>> for MEASUREMENT operating state only
+	//>>> for Measurement operating state only
 	bool startMeasurement() { return writeReg(0x00, 0x80); }
 	// 16-bit raw UV sensor readings, *uvX = 0xffff = overflow
 	bool readUVA(uint* uva) { return readReg16(0x02, uva); }
@@ -240,7 +242,7 @@ protected:
 };
 
 
-// Does a software reset and initilizes the default settings
+// Do a software reset and initialize the default settings
 // returns false if something's wrong
 // the default settings are ok for for most applications
 bool AS7331UVSensor::begin(TwoWire* twoWire, uint i2cAddress)
@@ -259,16 +261,17 @@ bool AS7331UVSensor::begin(TwoWire* twoWire, uint i2cAddress)
 // configuration registers are set to their default values
 bool AS7331UVSensor::reset()
 {
+	// send reset command
 	if (!writeReg(0x00, 0x0a))
 		return false;
-	delay(10);
+	delay(20);
 
-	// p
+	// p50
 	// check device ID and MUT (API Generation register)
 	// this fails if not in the 'configuration' operating state
 	byte id;
 	if (!readReg(0x02, &id) || id != 0x21) {
-		AS7331_PRINTLN("bad device id or not in CONFIGURATION state");
+		AS7331_PRINTLN("bad device id or not in Configuration state");
 		return false;
 	}
 
@@ -290,7 +293,7 @@ bool AS7331UVSensor::reset()
 
 // p59
 // Returns the 8-bit STATUS register value
-// test the returned 'status' value using AS7221_STATUS bits
+// test the returned 'status' value using AS7221Status bits
 // IMPORTANT
 // * p17, "It is recommended not to communicate via the I2C during the conversion"
 //   Poll the READY pin to determine when the reading is available.
@@ -298,35 +301,36 @@ bool AS7331UVSensor::reset()
 //   delay when the reading starts, and call readStatus() about 2ms after
 // * Reading the status clears the status bits, always check all the status bits
 //   for overflow etc.
-bool AS7331UVSensor::readStatus(AS7221_STATUS* status)
+bool AS7331UVSensor::readStatus(AS7331Status* status)
 {
 	// 1st byte is OSR, 2nd byte is STATUS
 	uint reg16;
 	if (!readReg16(0x00, &reg16)) {
-		*status = NOTREADY;
+		*status = AS7331Status::NotReady;
 		return false;
 	}
-	*status = (AS7221_STATUS)(reg16 >> 8);	// return STATUS register only
+	*status = (AS7331Status)(reg16 >> 8);	// return STATUS register only
 	return true;
 }
 
-// Operating state : CONFIGURATION or MEASURMENT
-bool AS7331UVSensor::setOperatingState(AS7221_OPERATING_STATE state)
+// Operating state : Configuration or Measurement
+bool AS7331UVSensor::setOperatingState(AS7331OperatingState state)
 {
-	AS7331_ASSERT(state == AS7221_OPERATING_STATE::CONFIGURATION ||
-		state == AS7221_OPERATING_STATE::MEASUREMENT, "invalid state");
+	AS7331_ASSERT(state == AS7331OperatingState::Configuration ||
+		state == AS7331OperatingState::Measurement, "invalid state");
 
 	osr = (osr & ~0x07) | state;
 	return writeReg(0x00, osr);
 }
 
-AS7331UVSensor::AS7221_OPERATING_STATE AS7331UVSensor::getOperatingState()
+AS7331UVSensor::AS7331OperatingState AS7331UVSensor::getOperatingState()
 {
 	// use the shadow register
-	AS7221_OPERATING_STATE state = (AS7221_OPERATING_STATE)(osr & 0x07);
-	if (state == AS7221_OPERATING_STATE::CONFIGURATION || state == AS7221_OPERATING_STATE::MEASUREMENT)
+	AS7331OperatingState state = (AS7331OperatingState)(osr & 0x07);
+	if (state == AS7331OperatingState::Configuration || 
+		state == AS7331OperatingState::Measurement)
 		return state;
-	return AS7221_OPERATING_STATE::INVALID;
+	return AS7331OperatingState::Invalid;
 }
 
 // Configuration
@@ -337,7 +341,7 @@ AS7331UVSensor::AS7221_OPERATING_STATE AS7331UVSensor::getOperatingState()
 bool AS7331UVSensor::setConfigCREG1(uint gain, uint time)
 {
 	AS7331_ASSERT(gain <= 11 && time <= 14, "bad parameter");
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::CONFIGURATION, "requires CONFIGURATION state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Configuration, "requires Configuration state");
 
 	// slao validates the configuration
 	if (!calculateCoefficients(gain, time, cclkI, divI))
@@ -356,7 +360,7 @@ bool AS7331UVSensor::setConfigCREG1(uint gain, uint time)
 bool AS7331UVSensor::setConfigCREG2(bool en_tm, bool en_div, uint div)
 {
 	AS7331_ASSERT(div <= 7, "bad parameter");
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::CONFIGURATION, "requires CONFIGURATION state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Configuration, "requires Configuration state");
 
 	// divider p54
 	uint divi = en_div ? div + 1 : 0;
@@ -386,7 +390,7 @@ bool AS7331UVSensor::setConfigCREG2(bool en_tm, bool en_div, uint div)
 bool AS7331UVSensor::setConfigCREG3(uint mmode, bool rdyod, uint cclk)
 {
 	AS7331_ASSERT(mmode <= 3 && cclk <= 3, "bad parameter");
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::CONFIGURATION, "requires CONFIGURATION state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Configuration, "requires Configuration state");
 
 	// also validates the configuration
 	if (!calculateCoefficients(gainI, timeI, cclk, divI))
@@ -407,7 +411,7 @@ bool AS7331UVSensor::setConfigCREG3(uint mmode, bool rdyod, uint cclk)
 bool AS7331UVSensor::setBREAK(uint tbreak)
 {
 	AS7331_ASSERT(tbreak <= 255, "bad parameter");
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::CONFIGURATION, "requires CONFIGURATION state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Configuration, "requires Configuration state");
 
 	return writeReg(0x09, (byte)tbreak);
 }
@@ -419,7 +423,7 @@ bool AS7331UVSensor::setBREAK(uint tbreak)
 bool AS7331UVSensor::setEDGES(uint edges)
 {
 	AS7331_ASSERT(edges > 0 && edges <= 255, "bad parameter");
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::CONFIGURATION, "requires CONFIGURATION state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Configuration, "requires Configuration state");
 
 	return writeReg(0x0a, (byte)edges);
 }
@@ -432,7 +436,7 @@ bool AS7331UVSensor::setEDGES(uint edges)
 // there's no need for a float calculation, the sensor is not that accurate
 bool AS7331UVSensor::readTemperature(int* degC)
 {
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Measurement, "requires Measurement state");
 
 	// temperature reading is 12 bits, max. 0x0fff (4095)
 	// p42, degC = (raw * 0.05) - 66.9
@@ -447,7 +451,7 @@ bool AS7331UVSensor::readTemperature(int* degC)
 // Read all 3 UV sensor's raw values
 bool AS7331UVSensor::readUV(uint* uva, uint* uvb, uint* uvc)
 {
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Measurement, "requires Measurement state");
 
 	*uva = 0; *uvb = 0; *uvc = 0;
 	return readUVA(uva) && readUVB(uvb) && readUVC(uvc);
@@ -457,7 +461,7 @@ bool AS7331UVSensor::readUV(uint* uva, uint* uvb, uint* uvc)
 // time = outconv / cclk
 bool AS7331UVSensor::readOUTCONV(ulong* outconv)
 {
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Measurement, "requires Measurement state");
 	AS7331_ASSERT(mmodeI == 3, "SYND mode only");
 
 	uint lo, hi;
@@ -478,7 +482,7 @@ bool AS7331UVSensor::readOUTCONV(ulong* outconv)
 // down a lot if sampling times are long and the UV changes are very big.
 bool AS7331UVSensor::automaticGainControl(uint uva, bool overflow /*= false*/)
 {
-	AS7331_ASSERT(getOperatingState() == AS7221_OPERATING_STATE::MEASUREMENT, "requires MEASUREMENT state");
+	AS7331_ASSERT(getOperatingState() == AS7331OperatingState::Measurement, "requires Measurement state");
 
 	// gainI : 0=x2048, 1=x1024, 2=x512, .. 10=x2, 11=x1
 
@@ -499,11 +503,11 @@ bool AS7331UVSensor::automaticGainControl(uint uva, bool overflow /*= false*/)
 		return false;
 
 	// update the gain
-	if (!setOperatingState(AS7221_OPERATING_STATE::CONFIGURATION))
+	if (!setOperatingState(AS7331OperatingState::Configuration))
 		return false;
 	if (!setConfigCREG1(gainI, timeI))
 		return false;
-	return setOperatingState(AS7221_OPERATING_STATE::MEASUREMENT);
+	return setOperatingState(AS7331OperatingState::Measurement);
 }
 
 // Calculations
@@ -556,21 +560,13 @@ uint AS7331UVSensor::calculateUVIndex(uint uva, uint uvb, uint uvc)
 	// depends on the altitude. The UVB that does get through is 1000x more 
 	// powerful than UVA!
 	// For UVC, 100% of UVC should be absorbed by the atmosphere, so it's ignored 
-	// (but my sensor measures VERY HIGH levels of UVC, up to 10uW/cm2 in evening 
+	// (but my sensor measures VERY HIGH levels of UVC, up to 15uW/cm2 in evening 
 	// sunlight through double glazing!?)
 
 	// irradiance in uW/cm2 (microWatts)
 	float irAuW = calculateIrradianceUVA(uva);
 	float irBuW = calculateIrradianceUVB(uvb);
-
-	// add in the UVB reading
-	//TODO 1000x UVB reading seems way too high! UVI goes way too high
-	//TODO out-of-spec chip?
-	//TODO measure UVA vs. UVB at different altitudes
-	float iruW = irAuW;
-	// for now, just use a ratio...
-	if (irAuW > 0.0f)		// prevent divide-by-zero
-		iruW += ((irBuW / irAuW) * 1000.0f);
+	float iruW = irAuW + (irBuW * 1000.0f);		// UVB is 1000x more potent!
 
 	// uW/cm2 -> UV Index
 	float uvi = iruW * 0.0004f;
@@ -584,7 +580,7 @@ uint AS7331UVSensor::calculateUVIndex(uint uva, uint uvb, uint uvc)
 // calculates the conversion time (tconvI) and number of significant bits (nbitsI)
 // validates the configuration, returning 'false' if it's invalid
 // 
-// uses values initialized by setConfigCREGx()
+// Uses values initialized by setConfigCREGx()
 // gain : 0=2048, 1=1024, 2=512, .. 11=1
 // time : number of clocks at frequency 'cclk', 0=2^10 .. 14=2^24
 // cclk : internal clock frequency, 0=1.024MHz, 1=2.048MHz, 2=4.096MHz, 3=8.192MHz
@@ -646,11 +642,11 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 	ulong gainMul = 1 << gain;
 
 	// if 'div' is active, increase the LS bit value and the full scale range
-	// 'div' is not needed for readings <= 16 bits or if the Full Scale Range
+	// 'div' is not used for readings <= 16 bits or if the Full Scale Range
 	// is < 0xffff (65535)
 	/*
 	The OUTCONV register is 24 bits. If a conversion of over 16 bits is used, 
-	only the LS 16 bits can be read via the MRESx registers. To read the upper 
+	only the LS 16 bits are returned in the MRESx registers. To read the upper 
 	8 bits, the 'div' divider can be used, see p39 section 7.5. This divides 
 	the OUTCONV reading, shifting the bits which are transferred to the MRES 
 	registers.
@@ -694,7 +690,7 @@ bool AS7331UVSensor::calculateCoefficients(uint gain, uint time, uint cclk, uint
 	// LS bit significance of upper 16 bits in nanoWatts-per-square-centimeter, nw/cm2
 	float xlsb = (gainMul * 1000.0f) / (1024L << time);
 
-	// include the window factors in the calculation (default = 1.0)
+	// include the window compensation factors in the calculation (default = 1.0)
 	lsbA = baseFSRA * xlsb * wfactA;
 	lsbB = baseFSRB * xlsb * wfactB;
 	lsbC = baseFSRC * xlsb * wfactC;
@@ -799,11 +795,25 @@ bool AS7331UVSensor::readReg(uint reg, byte* b)
 		AS7331_PRINTLN("endTransmission() failed");
 		return false;
 	}
+
+	// TODO There's a bug in Arduino's Wire.cpp, lines 83 and 86 
+	// the variable 'busOwner' is not initialized and requestFrom() 
+	// returns the wrong number of bytes (byteRead--)
+	// https://github.com/arduino/ArduinoCore-samd/issues/740
+	// see https://github.com/mumanchu/AS7331UVSensor for the fix
 	if (wire->requestFrom(i2cAdds, 1) != 1) {
-		AS7331_PRINTLN("requestFrom() failed");
+		AS7331_PRINTLN("requestFrom() failed (probably caused by the bug in Wire.cpp)");
+		//return false;
+	}
+
+	// read 1 byte and check it was read
+	int c = wire->read();
+	if (c == -1) {
+		AS7331_PRINTLN("read() failed");
 		return false;
 	}
-	*b = wire->read();
+	*b = (byte)c;
+
 	return true;
 }
 
@@ -817,8 +827,8 @@ bool AS7331UVSensor::readReg16(uint reg, uint* value)
 		return false;
 	}
 	if (wire->requestFrom(i2cAdds, 2) != 2) {
-		AS7331_PRINTLN("requestFrom() failed");
-		return false;
+		AS7331_PRINTLN("requestFrom() failed (probably caused by the bug in Wire.cpp)");
+		//return false;
 	}
 	byte buf[2];
 	if (wire->readBytes(buf, 2) != 2) {
@@ -828,3 +838,4 @@ bool AS7331UVSensor::readReg16(uint reg, uint* value)
 	*value = *(uint16_t*)buf;
 	return true;
 }
+
