@@ -1,5 +1,7 @@
 # AS7331 UVA/UVB/UVC Sensor with I2C Interface
 
+New Arduino library.
+
 For testing, the 'Sparkfun Mini Spectral UV Sensor' board was used (SEN-23518).
 https://docs.sparkfun.com/SparkFun_Spectral_UV_Sensor_AS7331/introduction/
 
