@@ -4,7 +4,7 @@
 // AS7331 UV Sensor with UVA, UVB and UVC Sensors and I2C Interface
 // 
 // If you re-use this code, please include this copyright notice:
-// Copyright (C) 2026.09.05, https://muman.ch and https://github/mumanchu
+// Copyright (C) 2026.09.08, https://muman.ch and https://github/mumanchu
 // All rights reversed, released under the terms of the WTF License
 // For details see
 // https://github.com/mumanchu/AS7331UVSensor
@@ -566,8 +566,10 @@ uint AS7331UVSensor::calculateUVIndex(uint uva, uint uvb, uint uvc)
 	// irradiance in uW/cm2 (microWatts)
 	float irAuW = calculateIrradianceUVA(uva);
 	float irBuW = calculateIrradianceUVB(uvb);
-	float iruW = irAuW + (irBuW * 1000.0f);		// UVB is 1000x more potent!
 
+	// include some UVB, tests show that a bit over 100x is about right (not 1000x)
+	float iruW = irAuW + (irBuW * 110.0f);
+	
 	// uW/cm2 -> UV Index
 	float uvi = iruW * 0.0004f;
 
