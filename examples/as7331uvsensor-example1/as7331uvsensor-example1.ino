@@ -51,7 +51,7 @@ void setup()
 
 	// 400kHz
 	Wire.begin();
-	Wire.setClock(100000);
+	Wire.setClock(400000);
 
 	// reset and set default configuration
 	if (!uvsensor.begin(&Wire, 0x74)) {
