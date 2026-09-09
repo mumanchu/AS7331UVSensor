@@ -284,6 +284,7 @@ https://github.com/RobTillaart/AS7331
 | Date  | Revision | Description |
 |:---------- |:---------|:----------- |
 | 2026.09.05 | 1.0.0	| Initial release |
+| 2026.09.09 | 1.0.1    | UV Index calculation, UVB influence is x100, not x1000 |
 
 <br/>
 
