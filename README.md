@@ -14,7 +14,7 @@ The AS7331 chip contains three separate photodiode sensors, for UVA, UVB and UVC
 > https://github.com/mumanchu/mumanchu/tree/main/utils 
 
 > [!NOTE]
-> This library was developed for the "MuUV" project. The MuUV device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination ;-)
+> This library was developed for the "muUV" project. The muUV® device is a rechargeable UVA/B/C sensor with a 128x64 display, rotary encoder for controlling the configuration menu, Wifi, Bluetooth and USB connections, and a Windows desktop application. This project will appear ~~soon~~ eventually on the https://muman.ch blog, with full source code and schematics. It uses a Seeed Studio XIAO microcontroller (ESP32). Tests are ongoing at high altitudes and at sea level. (Tests below sea level have been inconclusive due to sea water contamination ;-)
 
 
 ## What are UVA, UVB and UVC?
@@ -291,7 +291,7 @@ https://github.com/RobTillaart/AS7331
 
 ## Joke of the Week
 
-Matt's Tip #325: Never test a MuUV meter below sea level. \
+Matt's Tip #325: Never test a muUV meter below sea level. \
 _<unless it has IP68 or IP69 certification - ed>_
 
 https://iec.ch/ip-ratings
